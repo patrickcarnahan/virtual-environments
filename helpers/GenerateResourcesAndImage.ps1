@@ -19,20 +19,20 @@ Function Get-PackerTemplatePath {
 
     switch ($ImageType) {
         ([ImageType]::Windows2016) {
-            $relativePath = "\images\win\Windows2016-Azure.json"
+            $relativePath = Join-Path "images" "win" "Windows2016-Azure.json"
         }
         ([ImageType]::Windows2019) {
-            $relativePath = "\images\win\Windows2019-Azure.json"
+            $relativePath = Join-Path "images" "win" "Windows2019-Azure.json"
         }
         ([ImageType]::Ubuntu1604) {
-            $relativePath = "\images\linux\ubuntu1604.json"
+            $relativePath = Join-Path "images" "linux" "ubuntu1604.json"
         }
         ([ImageType]::Ubuntu1804) {
-            $relativePath = "\images\linux\ubuntu1804.json"
+            $relativePath = Join-Path "images" "linux" "ubuntu1804.json"
         }
     }
 
-    return $RepositoryRoot + $relativePath;
+    return Join-Path $RepositoryRoot $relativePath
 }
 
 Function GenerateResourcesAndImage {
@@ -93,82 +93,74 @@ Function GenerateResourcesAndImage {
     }
 
     $builderScriptPath = Get-PackerTemplatePath -RepositoryRoot $ImageGenerationRepositoryRoot -ImageType $ImageType
-    $ServicePrincipalClientSecret = $env:UserName + [System.GUID]::NewGuid().ToString().ToUpper();
     $InstallPassword = $env:UserName + [System.GUID]::NewGuid().ToString().ToUpper();
 
-    Login-AzureRmAccount
-    Set-AzureRmContext -SubscriptionId $SubscriptionId
+    #az login
+    az account set --subscription $SubscriptionId
 
-    $alreadyExists = $true;
-    try {
-        Get-AzureRmResourceGroup -Name $ResourceGroupName
-        Write-Verbose "Resource group was found, will delete and recreate it."
-    }
-    catch {
-        Write-Verbose "Resource group was not found, will create it."
-        $alreadyExists = $false;
-    }
-
-    if ($alreadyExists) {
-        if($Force -eq $true) {
-            # Cleanup the resource group if it already exitsted before
-            Remove-AzureRmResourceGroup -Name $ResourceGroupName -Force
-            New-AzureRmResourceGroup -Name $ResourceGroupName -Location $AzureLocation
-        } else {
-            $title = "Delete Resource Group"
-            $message = "The resource group you specified already exists. Do you want to clean it up?"
-
-            $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
-                "Delete the resource group including all resources."
-
-            $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", `
-                "Keep the resource group and continue."
-
-            $stop = New-Object System.Management.Automation.Host.ChoiceDescription "&Stop", `
-                "Stop the current action."
-
-            $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no, $stop)
-            $result = $host.ui.PromptForChoice($title, $message, $options, 0)
-
-            switch ($result)
-            {
-                0 { Remove-AzureRmResourceGroup -Name $ResourceGroupName -Force; New-AzureRmResourceGroup -Name $ResourceGroupName -Location $AzureLocation }
-                1 { <# Do nothing #> }
-                2 { exit }
-            }
+    $rg = $null
+    $alreadyExists = $(az group exists --name $ResourceGroupName)
+    if ($alreadyExists -eq $true) {
+        # Cleanup the resource group if it already exitsted before
+        $rg = $(az group list --query "[?name=='$ResourceGroupName']" | ConvertFrom-Json)
+        if ($rg.location -ne $AzureLocation.ToLower().Replace(' ', '')) {
+            Write-Host "Deleting resource group $ResourceGroupName since the location is not correct"
+            az group delete --yes --name $ResourceGroupName
+            $rg = $null
         }
-    } else {
-        New-AzureRmResourceGroup -Name $ResourceGroupName -Location $AzureLocation
+    }
+
+    if ($null -eq $rg) {
+        Write-Host "Creating resource group $ResourceGroupName in $AzureLocation"
+        az group create --name $ResourceGroupName --location $AzureLocation
     }
 
     # This script should follow the recommended naming conventions for azure resources
     $storageAccountName = if($ResourceGroupName.EndsWith("-rg")) {
-        $ResourceGroupName.Substring(0, $ResourceGroupName.Length -3)
+        $ResourceGroupName.Substring(0, $ResourceGroupName.Length - 3)
     } else { $ResourceGroupName }
 
     # Resource group names may contain special characters, that are not allowed in the storage account name
     $storageAccountName = $storageAccountName.Replace("-", "").Replace("_", "").Replace("(", "").Replace(")", "").ToLower()
     $storageAccountName += "001"
 
-    New-AzureRmStorageAccount -ResourceGroupName $ResourceGroupName -AccountName $storageAccountName -Location $AzureLocation -SkuName "Standard_LRS"
+    $storageAccount = $(az storage account list --query "[?name=='patcarnaimg001']" | ConvertFrom-Json)
+    if ($null -eq $storageAccount) {
+        az storage account create --resource-group $ResourceGroupName --name $storageAccountName --location $AzureLocation --sku "Standard_LRS"
+    }
 
-    $spDisplayName = [System.GUID]::NewGuid().ToString().ToUpper()
-    $sp = New-AzureRmADServicePrincipal -DisplayName $spDisplayName -Password (ConvertTo-SecureString $ServicePrincipalClientSecret -AsPlainText -Force)
+    $spDisplayName = "$($ResourceGroupName)_builder"
+    $sp = $(az ad sp list --filter "displayname eq '$spDisplayName'" | ConvertFrom-Json)
+    if ($null -eq $sp) {
+        Write-Host "Creating service principal $spDisplayName"
+        $sp = $(az ad sp create-for-rbac --name $spDisplayName --role Contributor  | ConvertFrom-Json)
+        $env:IMAGE_BUILDER_SP_SECRET = $sp.Password
 
-    $spAppId = $sp.ApplicationId
-    $spClientId = $sp.ApplicationId
-    $spObjectId = $sp.Id
-    Start-Sleep -Seconds $SecondsToWaitForServicePrincipalSetup
+        Write-Host "Sleeping for AD roles to propagate"
+        Start-Sleep -Seconds $SecondsToWaitForServicePrincipalSetup
+    } 
+    else {
+        if ($null -eq $env:IMAGE_BUILDER_SP_SECRET) {
+            # reset the credentials so we can get the new password out
+            Write-Host "Resetting service principal credentials for $($sp.appId)"
+            $sp = $(az ad sp credential reset --name $sp.appId | ConvertFrom-Json)
+            $env:IMAGE_BUILDER_SP_SECRET = $sp.password
 
-    New-AzureRmRoleAssignment -RoleDefinitionName Contributor -ServicePrincipalName $spAppId
-    Start-Sleep -Seconds $SecondsToWaitForServicePrincipalSetup
-    $sub = Get-AzureRmSubscription -SubscriptionId $SubscriptionId
-    $tenantId = $sub.TenantId
+            Write-Host "Sleeping for AD roles to propagate"
+            Start-Sleep -Seconds $SecondsToWaitForServicePrincipalSetup
+        }
+    }
+
+    $spClientId = $sp.appId
+    $spClientSecret = $sp.password
+    $spObjectId = $(az ad sp list --filter "displayname eq '$spDisplayName'" | ConvertFrom-Json).objectId
+    $tenantId = $sp.tenant
+
     # "", "Note this variable-setting script for running Packer with these Azure resources in the future:", "==============================================================================================", "`$spClientId = `"$spClientId`"", "`$ServicePrincipalClientSecret = `"$ServicePrincipalClientSecret`"", "`$SubscriptionId = `"$SubscriptionId`"", "`$tenantId = `"$tenantId`"", "`$spObjectId = `"$spObjectId`"", "`$AzureLocation = `"$AzureLocation`"", "`$ResourceGroupName = `"$ResourceGroupName`"", "`$storageAccountName = `"$storageAccountName`"", "`$install_password = `"$install_password`"", ""
 
-    packer.exe build -on-error=ask `
+    packer build -on-error=ask `
         -var "client_id=$($spClientId)" `
-        -var "client_secret=$($ServicePrincipalClientSecret)" `
+        -var "client_secret=$($spClientSecret)" `
         -var "subscription_id=$($SubscriptionId)" `
         -var "tenant_id=$($tenantId)" `
         -var "object_id=$($spObjectId)" `

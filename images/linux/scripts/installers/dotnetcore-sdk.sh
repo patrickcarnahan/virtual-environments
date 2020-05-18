@@ -7,7 +7,7 @@ source $HELPER_SCRIPTS/etc-environment.sh
 source $HELPER_SCRIPTS/apt.sh
 source $HELPER_SCRIPTS/document.sh
 
-LATEST_DOTNET_PACKAGES=("dotnet-sdk-3.0" "dotnet-sdk-3.1")
+LATEST_DOTNET_PACKAGES=("dotnet-sdk-3.1")
 
 LSB_RELEASE=$(lsb_release -rs)
 
@@ -46,52 +46,6 @@ for latest_package in ${LATEST_DOTNET_PACKAGES[@]}; do
     else
         echo ".NET Core ($latest_package) is already installed"
     fi
-done
-
-# Get list of all released SDKs from channels which are not end-of-life or preview
-release_urls=("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json" "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.2/releases.json" "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/3.0/releases.json" "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/3.1/releases.json")
-sdks=()
-for release_url in ${release_urls[@]}; do
-    echo "${release_url}"
-    releases=$(curl "${release_url}")
-    sdks=("${sdks[@]}" $(echo "${releases}" | jq '.releases[]' | jq '.sdk.version'))
-    sdks=("${sdks[@]}" $(echo "${releases}" | jq '.releases[]' | jq '.sdks[]?' | jq '.version'))
-done
-
-#temporary avoid 3.1.102 installation due to https://github.com/dotnet/aspnetcore/issues/19133
-sortedSdks=$(echo ${sdks[@]} | tr ' ' '\n' | grep -v 3.1.102 | grep -v preview | grep -v rc | grep -v display | cut -d\" -f2 | sort -u -r)
-
-for sdk in $sortedSdks; do
-    url="https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$sdk/dotnet-sdk-$sdk-linux-x64.tar.gz"
-    echo "$url" >> urls
-    echo "Adding $url to list to download later"
-done
-
-# Download additional SDKs
-echo "Downloading release tarballs..."
-cat urls | xargs -n 1 -P 16 wget -q
-for tarball in *.tar.gz; do
-    dest="./tmp-$(basename -s .tar.gz $tarball)"
-    echo "Extracting $tarball to $dest"
-    mkdir "$dest" && tar -C "$dest" -xzf "$tarball"
-    rsync -qav "$dest/shared/" /usr/share/dotnet/shared/
-    rsync -qav "$dest/host/" /usr/share/dotnet/host/
-    rsync -qav "$dest/sdk/" /usr/share/dotnet/sdk/
-    rm -rf "$dest"
-    rm "$tarball"
-done
-rm urls
-
-DocumentInstalledItem ".NET Core SDK:"
-# Smoke test each SDK
-for sdk in $sortedSdks; do
-    mksamples "$sdk" "console"
-    mksamples "$sdk" "mstest"
-    mksamples "$sdk" "xunit"
-    mksamples "$sdk" "web"
-    mksamples "$sdk" "mvc"
-    mksamples "$sdk" "webapi"
-    DocumentInstalledItemIndent "$sdk"
 done
 
 # NuGetFallbackFolder at /usr/share/dotnet/sdk/NuGetFallbackFolder is warmed up by smoke test
