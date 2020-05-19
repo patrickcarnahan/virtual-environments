@@ -80,17 +80,11 @@ Function GenerateResourcesAndImage {
         [string] $AzureLocation,
         [Parameter(Mandatory = $False)]
         [int] $SecondsToWaitForServicePrincipalSetup = 30,
-        [Parameter(Mandatory = $False)]
-        [string] $GithubFeedToken,
+        [Parameter(Mandatory = $True)]
+        [string] $AzDevNextToken,
         [Parameter(Mandatory = $False)]
         [Switch] $Force
     )
-
-    if (([string]::IsNullOrEmpty($GithubFeedToken)))
-    {
-        Write-Error "'-GithubFeedToken' parameter is not specified. You have to specify valid GitHub PAT to download tool packages from GitHub Package Registry"
-        exit 1
-    }
 
     $builderScriptPath = Get-PackerTemplatePath -RepositoryRoot $ImageGenerationRepositoryRoot -ImageType $ImageType
     $InstallPassword = $env:UserName + [System.GUID]::NewGuid().ToString().ToUpper();
@@ -124,7 +118,7 @@ Function GenerateResourcesAndImage {
     $storageAccountName = $storageAccountName.Replace("-", "").Replace("_", "").Replace("(", "").Replace(")", "").ToLower()
     $storageAccountName += "001"
 
-    $storageAccount = $(az storage account list --query "[?name=='patcarnaimg001']" | ConvertFrom-Json)
+    $storageAccount = $(az storage account list --query "[?name=='$storageAccountName']" | ConvertFrom-Json)
     if ($null -eq $storageAccount) {
         az storage account create --resource-group $ResourceGroupName --name $storageAccountName --location $AzureLocation --sku "Standard_LRS"
     }
@@ -138,7 +132,7 @@ Function GenerateResourcesAndImage {
 
         Write-Host "Sleeping for AD roles to propagate"
         Start-Sleep -Seconds $SecondsToWaitForServicePrincipalSetup
-    } 
+    }
     else {
         if ($null -eq $env:IMAGE_BUILDER_SP_SECRET) {
             # reset the credentials so we can get the new password out
@@ -148,6 +142,10 @@ Function GenerateResourcesAndImage {
 
             Write-Host "Sleeping for AD roles to propagate"
             Start-Sleep -Seconds $SecondsToWaitForServicePrincipalSetup
+        }
+        else {
+            Add-Member -InputObject $sp -MemberType NoteProperty -Name 'password' -Value $env:IMAGE_BUILDER_SP_SECRET | Out-Null
+            Add-Member -InputObject $sp -MemberType NoteProperty -Name 'tenant' -Value $sp.appOwnerTenantId | Out-Null
         }
     }
 
@@ -168,6 +166,6 @@ Function GenerateResourcesAndImage {
         -var "resource_group=$($ResourceGroupName)" `
         -var "storage_account=$($storageAccountName)" `
         -var "install_password=$($InstallPassword)" `
-        -var "github_feed_token=$($GithubFeedToken)" `
+        -var "azdevnext_token=$($AzDevNextToken)" `
         $builderScriptPath
 }

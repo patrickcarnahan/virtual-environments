@@ -4,7 +4,6 @@
 ##  Desc:  Prepulls Docker images used in build tasks and templates
 ################################################################################
 
-source $HELPER_SCRIPTS/apt.sh
 source $HELPER_SCRIPTS/document.sh
 
 # Check prereqs
@@ -15,7 +14,7 @@ if ! command -v docker; then
 fi
 
 # Information output
-systemctl status docker --no-pager
+# systemctl status docker --no-pager
 
 # Pull images
 images=(

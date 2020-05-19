@@ -17,9 +17,6 @@ echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/s
 apt-get update
 apt-get install -y kubectl
 
-# Install Helm
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-
 # Run tests to determine that the software installed as expected
 echo "Testing to make sure that script performed as expected, and basic scenarios work"
 if ! command -v kubectl; then
@@ -27,12 +24,6 @@ if ! command -v kubectl; then
     exit 1
 fi
 
-if ! command -v helm; then
-    echo "helm was not installed"
-    exit 1
-fi
-
 # Document what was added to the image
 echo "Lastly, documenting what we added to the metadata file"
 DocumentInstalledItem "kubectl ($(kubectl version --client --short |& head -n 1))"
-DocumentInstalledItem "helm ($(helm version --short |& head -n 1))"

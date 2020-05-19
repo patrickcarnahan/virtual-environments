@@ -2,9 +2,6 @@
 # Ubuntu 18.04.4 LTS
 The following software is installed on machines with the dev update.
 ***
-- Homebrew on Linux (Homebrew 2.2.17
-Homebrew/linuxbrew-core (git revision 1fe981; last commit 2020-05-18))
-- Azure CLI (azure-cli                          2.5.1)
 - Basic CLI:
   - curl
   - dnsutils
@@ -34,10 +31,6 @@ Homebrew/linuxbrew-core (git revision 1fe981; last commit 2020-05-18))
   - zstd
   - gnupg2
   - lib32z1
-- build-essential
-- Podman (1.9.1)
-- Buildah (1.14.9)
-- Skopeo (0.2.0)
 - Docker Compose (docker-compose version 1.25.4, build 8d51620a)
 - Docker-Moby (Docker version 3.0.11+azure, build eb310fca49568dccd87c6136f774ef6fff2a1b51)
 - Docker-Buildx (0.3.1+azure)
@@ -45,18 +38,8 @@ Homebrew/linuxbrew-core (git revision 1fe981; last commit 2020-05-18))
 - Git Large File Storage (LFS) (2.11.0)
 - Hub CLI (2.14.2)
 - kubectl (Client Version: v1.18.2)
-- helm (v3.2.1+gfe51cd1)
-- nvm (0.35.3)
-- Node.js (v12.16.3)
-- Grunt (grunt-cli v1.2.0)
-- Gulp (CLI version: 2.2.0
-Local version: Unknown)
-- n (6.5.1)
-- Parcel (1.12.4)
-- TypeScript (Version 3.9.2)
-- Webpack (4.43.0)
-- Webpack CLI (3.3.11)
-- Yarn (1.22.4)
+- kustomize 3.4.0
+- minikube 1.7.2
 - Powershell (PowerShell 7.0.1)
 - Haveged 1.9.1-6
 - Cached container images
@@ -65,7 +48,3 @@ Local version: Unknown)
   - mcr.microsoft.com/powershell:<none> (Digest: sha256:728693244ac70751e8021622f472c6a7ebeab65d4e8a8ecdb45ae132b3ca54b4)
   - mcr.microsoft.com/mssql/server:<none> (Digest: sha256:e064843673f08f22192c044ffa6a594b0670a3eb3f9ff7568dd7a65a698fc4d6)
   - redis:<none> (Digest: sha256:c6b7e6bd9e234221509e0ebc90ad89ff491e61a604a4eb2649570e9703fafc65)
-- Python (Python 2.7.17)
-- pip (pip 9.0.1 from /usr/lib/python2.7/dist-packages (python 2.7))
-- Python3 (Python 3.6.9)
-- pip3 (pip 9.0.1 from /usr/lib/python3/dist-packages (python 3.6))
