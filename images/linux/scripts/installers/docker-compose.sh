@@ -10,8 +10,11 @@ source $HELPER_SCRIPTS/document.sh
 version="1.25.4"
 
 # Install latest docker-compose from releases
-curl -L "https://github.com/docker/compose/releases/download/$version/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+echo "Testing to make sure that script performed as expected, and basic scenarios work"
+if ! command -v docker-compose; then
+    curl -L "https://github.com/docker/compose/releases/download/$version/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+fi
 
 # Run tests to determine that the software installed as expected
 echo "Testing to make sure that script performed as expected, and basic scenarios work"

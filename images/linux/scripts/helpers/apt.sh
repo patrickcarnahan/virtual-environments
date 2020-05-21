@@ -14,10 +14,7 @@ function IsInstalled {
 }
 
 # Configure apt to always assume Y
-echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
+if [ ! -f /etc/apt/apt.conf.d/90assumeyes ]; then
+    echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
+fi
 
-# Use apt-fast for parallel downloads
-apt-get install aria2
-add-apt-repository -y ppa:apt-fast/stable
-apt-get update
-apt-get -y install apt-fast

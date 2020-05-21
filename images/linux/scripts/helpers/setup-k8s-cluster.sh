@@ -4,19 +4,30 @@
 ##  Desc:  Sets up the actions-dev minikube cluster
 ################################################################################
 
-totalCpus=$(nproc --all)
-totalMem=$(free -b | awk '/^Mem/ {printf $2 }')
-kubeCpus=$(($totalCpus / 2))
-kubeMem="$(($totalMem / 1024 / 1024 / 1024 / 2)) GB"
-kubeDisk='30gb'
-kubeVersion='v1.16.9'
+BASE_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "Starting a minikube cluster with memory=$kubeMem, cpus=$kubeCpus, disk=$kubeDisk, kubernetes=$kubeVersion"
-minikube start -p actions-dev \
-    --vm-driver=docker \
-    --disk-size="$kubeDisk" \
-    --cpus="$kubeCpus" \
-    --memory="$kubeMem" \
-    --kubernetes-version="$kubeVersion" \
-    --feature-gates="StartupProbe=true" \
-    --extra-config="apiserver.service-node-port-range=1-65535"
+rm -f "$BASE_PATH/deploycore.ps1"
+
+cat << EOF > "$BASE_PATH/deploycore.ps1"
+Set-Location /agent/_work/1/s
+./init.ps1
+
+Import-Module ./Scripts/lib/DeploymentUtilities.psm1
+Start-Cluster -Driver 'docker' -UseAllResources \$true
+Deploy-SingletonService -Service 'mssql' -Environment 'test'
+Deploy-SingletonService -Service 'redis' -Environment 'test'
+
+kubectl rollout status -w deployment.apps/mssql --timeout=10m
+if (!\$?) {
+    throw "Failed to wait for mssql deployment to finish"
+}
+
+kubectl rollout status -w deployment.apps/redis --timeout=10m
+if (!\$?) {
+    throw "Failed to wait for redis deployment to finish"
+}
+EOF
+
+
+pwsh -File "$BASE_PATH/deploycore.ps1"
+

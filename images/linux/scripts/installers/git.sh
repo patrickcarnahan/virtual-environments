@@ -5,17 +5,23 @@
 ################################################################################
 
 # Source the helpers for use with the script
+source $HELPER_SCRIPTS/apt.sh
 source $HELPER_SCRIPTS/document.sh
 
 ## Install git
-add-apt-repository ppa:git-core/ppa -y
-apt-get update
-apt-get install git -y
+if ! IsInstalled 'git'; then
+    add-apt-repository ppa:git-core/ppa -y
+    apt-get update
+    apt-get install git -y
+fi
+
 git --version
 
 # Install git-lfs
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
-apt-get install -y --no-install-recommends git-lfs
+if ! IsInstalled 'git-lfs'; then
+    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+    apt-get install -y --no-install-recommends git-lfs
+fi
 
 # Run tests to determine that the software installed as expected
 echo "Testing git installation"

@@ -6,6 +6,10 @@
 
 LSB_RELEASE=$(lsb_release -rs)
 
+ if [ -f /etc/apt/trusted.gpg.d/microsoft.gpg ]; then
+    exit 0
+ fi
+
 # Install Microsoft repository
 wget https://packages.microsoft.com/config/ubuntu/$LSB_RELEASE/packages-microsoft-prod.deb
 dpkg -i packages-microsoft-prod.deb

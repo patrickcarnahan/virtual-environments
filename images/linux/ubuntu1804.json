@@ -23,9 +23,7 @@
         "capture_name_prefix": "packer",
         "image_version": "dev",
         "image_os": "ubuntu18",
-        "azdevnext_token": null,
-        "go_default": "1.14",
-        "go_versions": "1.11 1.12 1.13 1.14"
+        "azdevnext_token": null
     },
     "sensitive-variables": ["client_secret", "azdevnext_token"],
     "builders": [
@@ -51,14 +49,14 @@
             "image_publisher": "Canonical",
             "image_offer": "UbuntuServer",
             "image_sku": "18.04-LTS",
-            "os_disk_size_gb": "86"
+            "os_disk_size_gb": "160"
         }
     ],
     "provisioners": [
         {
             "type": "shell",
             "inline": [
-                "mkdir {{user `image_folder`}}",
+                "mkdir -p {{user `image_folder`}}",
                 "chmod 777 {{user `image_folder`}}",
                 "echo {{user `commit_url`}} > {{user `commit_file`}}",
                 "chmod +r {{user `commit_file`}}"
@@ -149,15 +147,13 @@
             "type": "shell",
             "scripts": [
                 "{{template_dir}}/scripts/installers/1804/basic.sh",
-                "{{template_dir}}/scripts/installers/docker-compose.sh",
                 "{{template_dir}}/scripts/installers/docker-moby.sh",
                 "{{template_dir}}/scripts/installers/git.sh",
                 "{{template_dir}}/scripts/installers/kubernetes-tools.sh",
                 "{{template_dir}}/scripts/installers/kustomize.sh",
                 "{{template_dir}}/scripts/installers/minikube.sh",
                 "{{template_dir}}/scripts/installers/powershellcore.sh",
-                "{{template_dir}}/scripts/installers/dpkg-config.sh",
-                "{{template_dir}}/scripts/installers/rndgenerator.sh"
+                "{{template_dir}}/scripts/installers/dpkg-config.sh"
             ],
             "environment_vars": [
                 "METADATA_FILE={{user `metadata_file`}}",
@@ -181,16 +177,33 @@
         {
             "type": "shell",
             "scripts":[
-                "{{template_dir}}/scripts/helpers/setup-k8s-cluster.sh",
+                "{{template_dir}}/scripts/helpers/clone-repo.sh",
                 "{{template_dir}}/scripts/helpers/containercache.sh",
-                "{{template_dir}}/scripts/helpers/clone-repo.sh"
+                "{{template_dir}}/scripts/helpers/setup-k8s-cluster.sh"
+            ],
+            "environment_vars": [
+                "METADATA_FILE={{user `metadata_file`}}",
+                "HELPER_SCRIPTS={{user `helper_script_folder`}}",
+                "INSTALLER_SCRIPT_FOLDER={{user `installer_script_folder`}}",
+                "SYSTEM_ACCESSTOKEN={{user `azdevnext_token`}}",
+                "VSS_NUGET_URI_PREFIXES=https://pkgs.dev.azure.com/mseng/",
+                "VSS_NUGET_ACCESSTOKEN={{user `azdevnext_token`}}",
+                "NUGET_PLUGIN_HANDSHAKE_TIMEOUT_IN_SECONDS=20",
+                "NUGET_PLUGIN_REQUEST_TIMEOUT_IN_SECONDS=20"
+            ],
+            "execute_command": "sudo -u AzDevOps -H sh -c '{{ .Vars }} {{ .Path }}'"
+        },
+        {
+            "type": "shell",
+            "scripts":[
+                "{{template_dir}}/scripts/helpers/create-warmup-service.sh"
             ],
             "environment_vars": [
                 "METADATA_FILE={{user `metadata_file`}}",
                 "HELPER_SCRIPTS={{user `helper_script_folder`}}",
                 "INSTALLER_SCRIPT_FOLDER={{user `installer_script_folder`}}"
             ],
-            "execute_command": "sudo -u AzDevOps sh -c '{{ .Vars }} {{ .Path }}'"
+            "execute_command": "sudo sh -c '{{ .Vars }} {{ .Path }}'"
         },
         {
             "type": "shell",

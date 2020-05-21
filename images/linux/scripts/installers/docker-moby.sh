@@ -8,6 +8,7 @@ source $HELPER_SCRIPTS/apt.sh
 source $HELPER_SCRIPTS/document.sh
 
 docker_package=moby
+installed=0
 
 ## Check to see if docker is already installed
 echo "Determing if Docker ($docker_package) is installed"
@@ -17,6 +18,7 @@ if ! IsInstalled $docker_package; then
     apt-get update
     apt-get install -y moby-engine moby-cli
     apt-get install --no-install-recommends -y moby-buildx
+    installed=1
 else
     echo "Docker ($docker_package) is already installed"
 fi
@@ -30,7 +32,7 @@ if ! command -v docker; then
 elif ! [[ $(docker buildx) ]]; then
     echo "Docker-Buildx was not installed"
     exit 1
-else
+elif $installed; then
     echo "Docker-moby and Docker-buildx checking the successfull"
     # Docker daemon takes time to come up after installing
     sleep 10
