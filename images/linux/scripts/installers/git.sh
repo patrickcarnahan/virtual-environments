@@ -9,11 +9,9 @@ source $HELPER_SCRIPTS/apt.sh
 source $HELPER_SCRIPTS/document.sh
 
 ## Install git
-if ! IsInstalled 'git'; then
-    add-apt-repository ppa:git-core/ppa -y
-    apt-get update
-    apt-get install git -y
-fi
+add-apt-repository ppa:git-core/ppa -y
+apt-get update
+apt-get install git -y
 
 git --version
 

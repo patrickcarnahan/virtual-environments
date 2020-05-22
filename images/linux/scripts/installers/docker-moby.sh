@@ -32,7 +32,7 @@ if ! command -v docker; then
 elif ! [[ $(docker buildx) ]]; then
     echo "Docker-Buildx was not installed"
     exit 1
-elif $installed; then
+elif [ $installed != 0 ]; then
     echo "Docker-moby and Docker-buildx checking the successfull"
     # Docker daemon takes time to come up after installing
     sleep 10
