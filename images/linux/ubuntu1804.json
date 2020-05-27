@@ -178,8 +178,8 @@
             "type": "shell",
             "scripts":[
                 "{{template_dir}}/scripts/helpers/clone-repo.sh",
-                "{{template_dir}}/scripts/helpers/containercache.sh",
-                "{{template_dir}}/scripts/helpers/setup-k8s-cluster.sh"
+                "{{template_dir}}/scripts/helpers/setup-k8s-cluster.sh",
+                "{{template_dir}}/scripts/helpers/containercache.sh"
             ],
             "environment_vars": [
                 "METADATA_FILE={{user `metadata_file`}}",

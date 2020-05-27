@@ -27,5 +27,6 @@ done
 mkdir -p ~/data/docker-images
 
 for image in $(docker image ls --format '{{ .Repository }}'); do
-    docker image save $image -o "~/docker-images/${image//\//-}.tar"
+    echo "Saving image $image to ~/data/docker-images/${image//\//-}.tar"
+    docker image save $image -o "~/data/docker-images/${image//\//-}.tar"
 done
