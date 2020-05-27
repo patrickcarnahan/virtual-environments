@@ -23,3 +23,9 @@ images=(
 for image in "${images[@]}"; do
     docker pull "$image"
 done
+
+mkdir -p ~/data/docker-images
+
+for image in $(docker image ls --format '{{ .Repository }}'); do
+    docker image save $image -o "~/docker-images/${image//\//-}.tar"
+done

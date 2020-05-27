@@ -49,7 +49,7 @@
             "image_publisher": "Canonical",
             "image_offer": "UbuntuServer",
             "image_sku": "18.04-LTS",
-            "os_disk_size_gb": "160"
+            "os_disk_size_gb": "128"
         }
     ],
     "provisioners": [
