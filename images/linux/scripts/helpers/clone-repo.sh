@@ -24,6 +24,7 @@ if [ ! -f ~/data/source_version ]; then
     version=$(git rev-parse HEAD)
     pwsh -c "& { ./init.ps1; dotnet restore; }"
     git config --unset http.extraheader
+    mkdir -p ~/data
     echo "$version" >> ~/data/source_version
     DocumentInstalledItem "AzDevNext ($version)"
     popd

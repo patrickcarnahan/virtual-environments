@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "$(date +%T) Configuring docker daemon to use local SSD" >> ~/actions-warmup.log
+echo "$(date +%T) Configuring docker daemon to use local SSD" | tee -a ~/actions-warmup.log
 sudo systemctl stop docker
 echo "{}" | jq '. += { "data-root": "/mnt/docker" }' | sudo tee /etc/docker/daemon.json
 sudo systemctl start docker
@@ -14,13 +14,19 @@ images=(
     mcr.microsoft.com/mssql/server:2017-CU20-ubuntu-16.04@sha256:eb1fc9a73c9c4662d3b468b635b9be34a48724100294ac20348ac0e93c55228d
 )
 
-echo "[$(date +%T)] Pulling docker images" >> ~/actions-warmup.log
+echo "[$(date +%T)] Pulling docker images" | tee -a ~/actions-warmup.log
 
 for image in "${images[@]}"; do
-    echo "[$(date +%T)] Pulling image $image" >> ~/actions-warmup.log
+    echo "[$(date +%T)] Pulling image $image" | tee -a ~/actions-warmup.log
     docker pull "$image" >> ~/actions-warmup.log
-    echo "[$(date +%T)] Finished pulling image $image" >> ~/actions-warmup.log
+    echo "[$(date +%T)] Finished pulling image $image" | tee -a ~/actions-warmup.log
 done
 
+# make sure the minikube home exists
+sudo mkdir -p /mnt/minikube
+sudo chown AzDevOps /mnt/minikube
+
+sudo apt-get install -y --no-install-recommends curl
+
 echo "[$(date +%T)] Finished pulling docker images" >> ~/actions-warmup.log
-pwsh -File ~/actions-warmup.ps1 >> ~/actions-warmup.log
+pwsh -File ~/actions-warmup.ps1 2>&1 | tee -a ~/actions-warmup.log
