@@ -9,27 +9,25 @@ source $HELPER_SCRIPTS/document.sh
 
 set -e
 
-if ! command -v 'zip'; then
-    apt-get install -y --no-install-recommends \
-        curl \
-        dnsutils \
-        dpkg \
-        file \
-        ftp \
-        jq \
-        locales \
-        netcat \
-        openssh-client \
-        parallel \
-        rpm \
-        rsync \
-        shellcheck \
-        sudo \
-        time \
-        unzip \
-        wget \
-        zip
-fi
+apt-get install -y --no-install-recommends \
+    curl \
+    dnsutils \
+    dpkg \
+    file \
+    ftp \
+    jq \
+    locales \
+    netcat \
+    openssh-client \
+    parallel \
+    rpm \
+    rsync \
+    shellcheck \
+    sudo \
+    time \
+    unzip \
+    wget \
+    zip
 
 # Run tests to determine that the software installed as expected
 echo "Testing to make sure that script performed as expected, and basic scenarios work"
