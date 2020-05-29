@@ -25,7 +25,7 @@ if (!$?) {
 
 for ($attempt = 1; $attempt -le 100; $attempt++) {
     Write-Output "$(date +%T) Connecting to mssql (attempt $attempt)"
-    & kubectl exec deployment.apps/mssql -- /opt/mssql-tools/bin/sqlcmd -U SA -P SqlPassw0rd1 -Q "PRINT 'Alive'" > /dev/null
+    & kubectl exec deployment.apps/mssql -- /opt/mssql-tools/bin/sqlcmd -U SA -P SqlPassw0rd -Q "PRINT 'Alive'" > /dev/null
     if ($?) {
         Write-Output "$(date +%T) Successfully connected to mssql"
         break
