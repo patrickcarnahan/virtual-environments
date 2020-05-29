@@ -22,6 +22,20 @@ kubectl rollout status -w deployment.apps/redis --timeout=10m
 if (!$?) {
     throw "Failed to wait for redis deployment to finish"
 }
+
+for ($attempt = 1; $attempt -le 100; $attempt++) {
+    Write-Output "$(date +%T) Connecting to mssql (attempt $attempt)"
+    & kubectl exec deployment.apps/mssql -- /opt/mssql-tools/bin/sqlcmd -U SA -P SqlPassw0rd1 -Q "PRINT 'Alive'" > /dev/null
+    if ($?) {
+        Write-Output "$(date +%T) Successfully connected to mssql"
+        break
+    }
+    else {
+        Start-Sleep -Seconds 1
+        Write-Output "$(date +%T) Failed to connect to mssql. Waiting 1 second before trying again."
+    }
+}
+
 Write-Output "$(date +%T) Core services successfully deployed"
 
 Write-Output "$(date +%T) Updating mssql deployment for optimal performance"
