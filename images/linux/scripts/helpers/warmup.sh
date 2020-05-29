@@ -18,7 +18,7 @@ echo "[$(date +%T)] Pulling docker images" | tee -a ~/actions-warmup.log
 
 for image in "${images[@]}"; do
     echo "[$(date +%T)] Pulling image $image" | tee -a ~/actions-warmup.log
-    docker pull "$image" >> ~/actions-warmup.log
+    docker pull "$image" 2>&1 | tee -a ~/actions-warmup.log
     echo "[$(date +%T)] Finished pulling image $image" | tee -a ~/actions-warmup.log
 done
 
@@ -28,5 +28,5 @@ sudo chown AzDevOps /mnt/minikube
 
 sudo apt-get install -y --no-install-recommends curl
 
-echo "[$(date +%T)] Finished pulling docker images" >> ~/actions-warmup.log
+echo "[$(date +%T)] Finished pulling docker images" | tee -a ~/actions-warmup.log
 pwsh -File ~/actions-warmup.ps1 2>&1 | tee -a ~/actions-warmup.log

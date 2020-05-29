@@ -24,6 +24,21 @@ if (!$?) {
 }
 Write-Output "$(date +%T) Core services successfully deployed"
 
+Write-Output "$(date +%T) Updating mssql deployment for optimal performance"
+$cpus = Get-LogicalCPUCount
+for ($fileNum = 2; $fileNum -le $cpus; $fileNum++) {
+    Write-Host "Adding tempdb file $fileNum"
+    $query = "ALTER DATABASE [tempdb] ADD FILE (NAME = 'tempdev${fileNum}', FILENAME = '/data/mssql/data/tempdb_mssql_${fileNum}.ndf', SIZE = 8MB, FILEGROWTH = 64MB)"
+    kubectl exec deployment.apps/mssql -- /opt/mssql-tools/bin/sqlcmd -U SA -P SqlPassw0rd -Q $query
+}
+
+kubectl exec deployment.apps/mssql -- /opt/mssql/bin/mssql-conf traceflag 3979 on
+kubectl exec deployment.apps/mssql -- /opt/mssql/bin/mssql-conf set control.writethrough 0
+kubectl exec deployment.apps/mssql -- /opt/mssql/bin/mssql-conf set control.alternatewritethrough 0
+kubectl scale deployment mssql --replicas=0
+kubectl scale deployment mssql --replicas=1
+Write-Output "$(date +%T) Successfully updated mssql deployment with $cpus tempdb files"
+
 Write-Output "$(date +%T) Cleaning the repo and removing .nuget.verify"
 rm -f ../obj/.nuget.verify
 git clean -ffdx
